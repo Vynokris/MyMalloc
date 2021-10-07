@@ -39,6 +39,8 @@ void test1()
 
 void my_test()
 {
+    printf("\n");
+
     // Allocate a string.
     char* val1 = my_alloc(sizeof(char) * 13);
     val1[0] = 'H';
@@ -57,10 +59,24 @@ void my_test()
     val1[13] = '\0';
     printf("Allocated char* val1 of value: %s\n", val1);
 
+    showDebugInfo();
+
+    // Callocate an int array.
+    int* val8 = my_calloc(50, sizeof(int));
+    printf("Callocated int array val8 to values: %d, %d, %d\n", val8[0], val8[1], val8[2]);
+
+    showDebugInfo();
+
     // Allocate an int.
     int* val2 = my_alloc(sizeof(int));
     *val2 = 5;
     printf("Allocated int val2 of value: %d\n", *val2);
+
+    showDebugInfo();
+
+    // Free val8.
+    my_free(val8);
+    printf("Freed int array val8\n");
 
     showDebugInfo();
 
@@ -116,7 +132,14 @@ void my_test()
     printf("Freed long long int val7 using realloc\n");
 
     showDebugInfo();
+
+    // Free val 6.
+    my_free(val6);
+    printf("Freed char val6.\n");
+
+    showDebugInfo();
 }
+
  
 int main()
 {
