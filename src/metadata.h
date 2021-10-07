@@ -15,6 +15,3 @@ typedef struct MetaData {
 
 // Returns the meta-data of all allocated memory.
 static MetaData** get_metadata();
-
-// Prints all the metadata.
-void print_metadata();
