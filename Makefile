@@ -1,4 +1,4 @@
-CFLAGS=-O0 -g -Wall -Wextra -Wno-unused-parameter -Iinclude
+CFLAGS=-O0 -g -Wall -Wextra -Wno-unused-parameter -Iinclude -Wno-deprecated-declarations # The last argument is to get rid of warnings when using malloc hooks
 CPPFLAGS=-MMD
 LDFLAGS=
 LDLIBS=

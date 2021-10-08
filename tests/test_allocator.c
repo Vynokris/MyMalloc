@@ -42,6 +42,10 @@ void my_test()
 {
     showDebugInfo();
 
+    printf("Allocated 1024 bytes for the printf function.\n");
+
+    showDebugInfo();
+
     // Callocate an int array.
     int* val0 = calloc(49, sizeof(int));
     printf("Callocated int[49] val8, first 3 values: %d, %d, %d.\n", val0[0], val0[1], val0[2]);
@@ -75,17 +79,17 @@ void my_test()
 
     showDebugInfo();
 
-    // Free val8.
+    // Free val0.
     free(val0);
     printf("Freed int[50] val8 of first 3 values: 0, 0, 0.\n");
 
     showDebugInfo();
 
-    // Reallocate val3.
+    // Allocate val3.
     int* val3 = malloc(sizeof(int) * 5);
     val3[0] = 10;
     val3[1] = 5;
-    printf("Allocated int[2] val3 of first 2 values: %d.\n", val3[0], val3[1]);
+    printf("Allocated int[5] val3 of first 2 values: %d, %d.\n", val3[0], val3[1]);
 
     showDebugInfo();
 
@@ -117,19 +121,26 @@ void my_test()
     // Reallocate val5.
     long long int* val7 = realloc(val5, sizeof(long long int));
     *val7 = 1;
-    printf("Reallocated int val5 to variable val7 of value: %lld.\n", *val7);
+    printf("Reallocated int val5 to variable long long int val7 of value: %lld.\n", *val7);
 
     showDebugInfo();
 
     // Free val7 using realloc.
-    realloc(val7, 0);
+    int* val9 = realloc(val7, 0);
+    (void)val9;
     printf("Using realloc, freed long long int val7 of value: 1.\n");
 
     showDebugInfo();
 
-    // Free val 6.
+    // Free val6.
     free(val6);
     printf("Freed char val6 of value: a.\n");
+
+    showDebugInfo();
+
+    // Free val7.
+    free(val2);
+    printf("Freed char val2 of value: 5.\n");
 
     showDebugInfo();
 }

@@ -24,7 +24,7 @@ static size_t get_data_size(MetaData* metadata_block);
 static size_t get_metadata_size(MetaData* metadata_block);
 
 // Returns the smallest number superior to size that is divisible ny 8.
-static size_t get_aligned_size(size);
+static size_t get_aligned_size(size_t size);
 
 // Allocates room for a metadata and a data at the given address, and make sure they and the brake are at an address multiple of 8.
 static void* alloc_metadata_and_data(MetaData** metadata_block, size_t size);
