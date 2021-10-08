@@ -65,7 +65,7 @@ void my_test()
 
     // Callocate an int array.
     int* val8 = my_calloc(50, sizeof(int));
-    printf("Callocated int array val8 to values: %d, %d, %d.\n", val8[0], val8[1], val8[2]);
+    printf("Callocated int[50] val8, first 3 values: %d, %d, %d.\n", val8[0], val8[1], val8[2]);
 
     showDebugInfo();
 
@@ -78,7 +78,7 @@ void my_test()
 
     // Free val8.
     my_free(val8);
-    printf("Freed int array val8 of values: 0, 0, 0.\n");
+    printf("Freed int[50] val8 of first 3 values: 0, 0, 0.\n");
 
     showDebugInfo();
 
@@ -111,21 +111,21 @@ void my_test()
     // Reallocate the val3.
     int* val5 = my_realloc(val3, sizeof(int));
     *val5 = 20;
-    printf("Reallocated int val3 to value: %d.\n", *val5);
+    printf("Reallocated int val3 to variable val5 of value: %d.\n", *val5);
 
     showDebugInfo();
 
     // Reallocate val4.
     char* val6 = my_realloc(val4, sizeof(char));
     *val6 = 'a';
-    printf("Reallocated int val4 to char value: %c.\n", *val6);
+    printf("Reallocated int val4 to variable char val6 of value: %c.\n", *val6);
 
     showDebugInfo();
 
     // Reallocate val5.
     long long int* val7 = my_realloc(val5, sizeof(long long int));
     *val7 = 1;
-    printf("Reallocated int val5 to value: %d.\n", *val7);
+    printf("Reallocated int val5 to variable val7 of value: %d.\n", *val7);
 
     showDebugInfo();
 

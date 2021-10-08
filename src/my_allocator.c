@@ -3,7 +3,7 @@
 
 
 // Definine console colors for the showDebugInfo function.
-#define C_DEFAULT "\x1B[39m" // Removes color and underline.
+#define C_DEFAULT "\x1B[39m"
 #define C_GRAY "\x1B[38;5;239m"
 #define C_RED "\x1B[38;5;203m"
 #define C_GREEN "\x1B[32m"
@@ -61,6 +61,7 @@ void showDebugInfo()
             printf(" metadata #%d\n", i);
             printf(" adress: %p\n", current);
             printf(" size: %d\n", get_metadata_size(current));
+            printf(" %s\n", ((int)current % 8 == 0 ? "adress divisible by 8" : "ADRESS NOT DIVISIBLE BY 8"));
             printf("%s", C_DEFAULT);
 
             // Printf the data info in green if the data is free, and in red if it is used.
@@ -73,6 +74,7 @@ void showDebugInfo()
             printf(" adress: %p\n", get_data(current));
             printf(" size: %d\n", get_data_size(current));
             printf(" free: %s\n", (current->free ? "true":"false"));
+            printf(" %s\n", ((int)get_data(current) % 8 == 0 ? "adress divisible by 8" : "ADRESS NOT DIVISIBLE BY 8"));
             printf("%s", C_DEFAULT);
             
             // Move to the next metadata.
@@ -93,26 +95,54 @@ void* my_alloc(size_t size)
     // If the metadata list is empty, move the break and return.
     if (*metadata == NULL) 
     {
+        // Allocate space for the metadata.
         *metadata = sbrk(sizeof(MetaData));
+
+        // Make sure the metadata is at an adress multiple of 8
+        while ((int)(*metadata) % 8 != 0) {
+            *metadata = sbrk(1);
+        }
+
+        // The stored data will also be at an adress multiple of 8 since sizeof(Metadata) = 16.
         sbrk(size);
         **metadata = (MetaData){ false, NULL };
+
+        // Make sure the break is at an adress multiple of 8.
+        while ((int)sbrk(0) % 8 != 0) {
+            sbrk(1);
+        }
+
         return get_data(*metadata);
     }
 
     else 
     {
-        // Find a free memory block in the heap.
+        // Find a free memory block in the heap that is large enough to hold the data, or use a new memory block after the break..
         MetaData* mem_block = *metadata;
-        while (mem_block->next != NULL && !(mem_block->free && get_data_size(mem_block) >= sizeof(MetaData) + size)) {
+        while (mem_block->next != NULL && !(mem_block->free && get_data_size(mem_block) >= sizeof(MetaData) + size + size % 8)) {
             mem_block = mem_block->next;
         }
 
         // If the found memory block is after the break, move the break and return.
-        // if (mem_block->next == NULL && !(mem_block->free && get_data_size(mem_block) >= sizeof(MetaData) + size)) {
-        if (get_data(mem_block) + get_data_size(mem_block) >= sbrk(0)) {
+        if (get_data(mem_block) + get_data_size(mem_block) >= sbrk(0)) 
+        {
+            // Allocate room for the metadata.
             mem_block->next = sbrk(sizeof(MetaData));
+
+            // Make sure the metadata is at an adress multiple of 8.
+            while ((int)(mem_block->next) % 8 != 0) {
+                mem_block->next = sbrk(1);
+            }
+
+            // The stored data will also be at an adress multiple of 8 since sizeof(Metadata) = 16.
             sbrk(size);
             *(mem_block->next) = (MetaData){ false, NULL };
+
+            // Make sure the break is at an adress multiple of 8.
+            while ((int)sbrk(0) % 8 != 0) {
+                sbrk(1);
+            }
+
             return get_data(mem_block->next);
         }
 
@@ -124,10 +154,10 @@ void* my_alloc(size_t size)
                 return get_data(mem_block);
             }
 
-            // If the found memory is too large, set the necessary size to used, leave the remaining free and return.
+            // If the found memory is too large, split it and return.
             else {
                 // Get the values for the meta-data of the new memory block.
-                void* new_md_adress = get_data(mem_block) + size;
+                void* new_md_adress = get_data(mem_block) + size + size % 8;
                 MetaData* next_metadata = mem_block->next;
 
                 // Reallocate the found memory.
@@ -189,11 +219,13 @@ void my_free(void* ptr)
             mem_block->free = true;
         }
 
-        // Check for consecutive free memory blocks and merge them.
+
         MetaData* cur_mem_block = *metadata;
         MetaData* last_mem_block = *metadata;
 
-        while (cur_mem_block->next != NULL) {
+        // Check for consecutive free memory blocks and merge them.
+        while (cur_mem_block->next != NULL) 
+        {
             cur_mem_block = cur_mem_block->next;
 
             // If the current and the precedent memory block are free, merge them
@@ -201,21 +233,26 @@ void my_free(void* ptr)
                 last_mem_block->next = cur_mem_block->next;
                 cur_mem_block = last_mem_block;
             }
+
             else {
                 last_mem_block = cur_mem_block;
             }
         }
 
-        // Check if the last memory block is free and move the break back if so.
+        // If the only memory block is free, move the break back and empty the metadata array.
         if ((*metadata)->next == NULL) {
             brk(cur_mem_block);
             *metadata = NULL;
         }
+
+        // Check if the last memory block is free and move the break back if so.
         else {
             cur_mem_block = *metadata;
+
             while (cur_mem_block->next->next != NULL) {
                 cur_mem_block = cur_mem_block->next;
             }
+            
             if (cur_mem_block->next->free) {
                 brk(cur_mem_block->next);
                 cur_mem_block->next = NULL;
