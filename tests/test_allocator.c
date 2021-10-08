@@ -125,7 +125,7 @@ void my_test()
     // Reallocate val5.
     long long int* val7 = my_realloc(val5, sizeof(long long int));
     *val7 = 1;
-    printf("Reallocated int val5 to variable val7 of value: %d.\n", *val7);
+    printf("Reallocated int val5 to variable val7 of value: %lld.\n", *val7);
 
     showDebugInfo();
 
