@@ -29,9 +29,9 @@ void showDebugInfo()
             printf("%s|-------------------------|%s\n", C_LIGHT_BLUE, C_DEFAULT);
             printf("%s", C_GRAY);
             printf(" metadata #%d\n", i);
-            printf(" adress: %p\n", current);
-            printf(" size: %d\n", get_metadata_size(current));
-            printf(" adress multiple of 8: %s\n", ((int)current % 8 == 0 ? "yes" : "NO"));
+            printf(" address: %p\n", current);
+            printf(" size: %ld\n", get_metadata_size(current));
+            printf(" address multiple of 8: %s\n", ((int)current % 8 == 0 ? "yes" : "NO"));
             printf("%s", C_DEFAULT);
 
             // Printf the data info in green if the data is free, and in red if it is used.
@@ -41,10 +41,10 @@ void showDebugInfo()
             else 
                 printf("%s", C_RED);
             printf(" data #%d\n", i);
-            printf(" adress: %p\n", get_data(current));
-            printf(" size: %d\n", get_data_size(current));
+            printf(" address: %p\n", get_data(current));
+            printf(" size: %ld\n", get_data_size(current));
             printf(" free: %s\n", (current->free ? "true":"false"));
-            printf(" adress multiple of 8: %s\n", ((int)get_data(current) % 8 == 0 ? "yes" : "NO"));
+            printf(" address multiple of 8: %s\n", ((int)get_data(current) % 8 == 0 ? "yes" : "NO"));
             printf("%s", C_DEFAULT);
             
             // Move to the next metadata.
@@ -53,8 +53,8 @@ void showDebugInfo()
         printf("%s|-------------------------|%s\n", C_LIGHT_BLUE, C_DEFAULT);
     }
 
-    printf("%sBreak adress: %p\n", C_LIGHT_BLUE, sbrk(0));
-    printf("Break adress multiple of 8: %s%s", ((int)sbrk(0) % 8 == 0 ? "yes\n\n" : "NO\n\n"), C_DEFAULT);
+    printf("%sBreak address: %p\n", C_LIGHT_BLUE, sbrk(0));
+    printf("Break address multiple of 8: %s%s", ((int)sbrk(0) % 8 == 0 ? "yes\n\n" : "NO\n\n"), C_DEFAULT);
 }
 
 
@@ -71,18 +71,18 @@ static void* get_data(MetaData* metadata_block)
 }
 
 
-static int get_data_size(MetaData* metadata_block)
+static size_t get_data_size(MetaData* metadata_block)
 {
     if (metadata_block->next != NULL) {
         return (void*)metadata_block->next - get_data(metadata_block);
     }
     else {
-        return sbrk(0) - (int)get_data(metadata_block);
+        return (int)(sbrk(0) - (int)get_data(metadata_block));
     }
 }
 
 
-static int get_metadata_size(MetaData* metadata_block)
+static size_t get_metadata_size(MetaData* metadata_block)
 {
     return get_data(metadata_block) - (void*)metadata_block;
 }
@@ -90,7 +90,7 @@ static int get_metadata_size(MetaData* metadata_block)
 
 static void* alloc_metadata_and_data(MetaData** metadata_block, size_t size)
 {
-    // Make sure the break is at an adress multiple of 8.
+    // Make sure the break is at an address multiple of 8.
     while ((int)sbrk(0) % 8 != 0) {
         sbrk(1);
     }
@@ -100,7 +100,7 @@ static void* alloc_metadata_and_data(MetaData** metadata_block, size_t size)
     **metadata_block = (MetaData){ false, NULL };
 
     // Allocate room for the data, which size the closest nomber greater than the size argument that is divisible by 8. 
-    // It will always be at an adress multiple of 8 since sizeof(MetaData) = 16.
+    // It will always be at an address multiple of 8 since sizeof(MetaData) = 16.
     sbrk(size + (8 - size) % 8);
 
     return get_data(*metadata_block);
@@ -121,7 +121,7 @@ void* my_alloc(size_t size)
     {
         // Find a free memory block in the heap that is large enough to hold the data, or allocate a new memory block after the break.
         MetaData* mem_block = *metadata;
-        while (!(mem_block->free && get_data_size(mem_block) >= sizeof(MetaData) + size + (8 - size) % 8) && mem_block->next != NULL) {
+        while (!(mem_block->free && get_data_size(mem_block) >= (int)sizeof(MetaData) + size + (8 - size) % 8) && mem_block->next != NULL) {
             mem_block = mem_block->next;
         }
 
@@ -141,14 +141,14 @@ void* my_alloc(size_t size)
             // If the found memory is too large, split it and return.
             else {
                 // Get the values for the meta-data of the new memory block.
-                void* new_md_adress = get_data(mem_block) + size + (8 - size) % 8;
+                void* new_md_address = get_data(mem_block) + size + (8 - size) % 8;
                 MetaData* next_metadata = mem_block->next;
 
                 // Reallocate the found memory.
                 mem_block->free = false;
 
                 // Set the meta-data values for the new memory block.
-                mem_block->next = new_md_adress;
+                mem_block->next = new_md_address;
                 *(mem_block->next) = (MetaData){ true, next_metadata };
 
                 return get_data(mem_block);
@@ -167,6 +167,8 @@ void* my_realloc(void* ptr, size_t size)
     if (size > 0) {
         my_alloc(size);
     }
+
+    return ptr;
 }
 
 
@@ -176,7 +178,7 @@ void* my_calloc(size_t nb, size_t size)
     void* ptr = my_alloc(nb * size);
 
     // Set all the pointer's values to 0.
-    for (int i = 0; i < nb * size; i++) {
+    for (size_t i = 0; i < nb * size; i++) {
         *((char*)ptr + i) = 0;
     }
 
