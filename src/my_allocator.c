@@ -2,6 +2,14 @@
 #include "metadata.h"
 
 
+// Definine console colors for the showDebugInfo function.
+#define C_DEFAULT "\x1B[39m" // Removes color and underline.
+#define C_GRAY "\x1B[38;5;239m"
+#define C_RED "\x1B[38;5;203m"
+#define C_GREEN "\x1B[32m"
+#define C_LIGHT_BLUE "\x1B[38;5;110m"
+
+
 static MetaData** get_metadata()
 {
     static MetaData* metadata = NULL;
@@ -38,30 +46,42 @@ void showDebugInfo()
     MetaData* metadata = *get_metadata();
 
     if (metadata == NULL) {
-        printf("\nNo data.\n");
+        printf("\n%sNo allocated data.%s\n", C_LIGHT_BLUE, C_DEFAULT);
     }
     else {
-        printf("\nAllocated data:\n");
+        printf("\n%sAllocated data:%s\n", C_LIGHT_BLUE, C_DEFAULT);
 
         // Loop through the elements and print them.
         MetaData* current = metadata;
-        for (int i = 0; current != NULL; i++) {
-            printf("|----------------------|\n");
+        for (int i = 0; current != NULL; i++) 
+        {
+            // Print the metadata info in gray.
+            printf("%s|----------------------|%s\n", C_LIGHT_BLUE, C_DEFAULT);
+            printf("%s", C_GRAY);
             printf(" metadata #%d\n", i);
             printf(" adress: %p\n", current);
             printf(" size: %d\n", get_metadata_size(current));
-            printf("|----------------------|\n");
+            printf("%s", C_DEFAULT);
+
+            // Printf the data info in green if the data is free, and in red if it is used.
+            printf("%s|----------------------|%s\n", C_LIGHT_BLUE, C_DEFAULT);
+            if (current->free)
+                printf("%s", C_GREEN);
+            else 
+                printf("%s", C_RED);
             printf(" data #%d\n", i);
             printf(" adress: %p\n", get_data(current));
             printf(" size: %d\n", get_data_size(current));
             printf(" free: %s\n", (current->free ? "true":"false"));
+            printf("%s", C_DEFAULT);
             
+            // Move to the next metadata.
             current = current->next;
         }
-        printf("|----------------------|\n");
+        printf("%s|----------------------|%s\n", C_LIGHT_BLUE, C_DEFAULT);
     }
 
-    printf("Break adress: %p\n\n", sbrk(0));
+    printf("%sBreak adress: %p%s\n\n", C_LIGHT_BLUE, sbrk(0), C_DEFAULT);
 }
 
 
@@ -83,12 +103,13 @@ void* my_alloc(size_t size)
     {
         // Find a free memory block in the heap.
         MetaData* mem_block = *metadata;
-        while (!(mem_block->free && get_data_size(mem_block) >= sizeof(MetaData) + size) && mem_block->next != NULL) {
+        while (mem_block->next != NULL && !(mem_block->free && get_data_size(mem_block) >= sizeof(MetaData) + size)) {
             mem_block = mem_block->next;
         }
 
         // If the found memory block is after the break, move the break and return.
-        if (mem_block->next == NULL) {
+        // if (mem_block->next == NULL && !(mem_block->free && get_data_size(mem_block) >= sizeof(MetaData) + size)) {
+        if (get_data(mem_block) + get_data_size(mem_block) >= sbrk(0)) {
             mem_block->next = sbrk(sizeof(MetaData));
             sbrk(size);
             *(mem_block->next) = (MetaData){ false, NULL };
