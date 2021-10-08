@@ -46,11 +46,19 @@ void showDebugInfo()
         // Loop through the elements and print them.
         MetaData* current = metadata;
         for (int i = 0; current != NULL; i++) {
-            printf("%d:\n metadata adress = %p\n metadata size = %d\n data adress = %p\n data size = %d\n free = %s\n", 
-                    i, current, get_metadata_size(current), get_data(current), get_data_size(current), (current->free ? "true":"false"));
+            printf("|----------------------|\n");
+            printf(" metadata #%d\n", i);
+            printf(" adress: %p\n", current);
+            printf(" size: %d\n", get_metadata_size(current));
+            printf("|----------------------|\n");
+            printf(" data #%d\n", i);
+            printf(" adress: %p\n", get_data(current));
+            printf(" size: %d\n", get_data_size(current));
+            printf(" free: %s\n", (current->free ? "true":"false"));
             
             current = current->next;
         }
+        printf("|----------------------|\n");
     }
 
     printf("Break adress: %p\n\n", sbrk(0));
