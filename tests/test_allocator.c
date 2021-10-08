@@ -41,6 +41,8 @@ void my_test()
 {
     printf("\n");
 
+    printf("Break adress: %p\n\n", sbrk(0));
+
     // Allocate a string.
     char* val1 = my_alloc(sizeof(char) * 13);
     val1[0] = 'H';
