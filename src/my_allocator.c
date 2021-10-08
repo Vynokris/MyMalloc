@@ -112,23 +112,21 @@ void* my_alloc(size_t size)
     // MetaData chained list.
     MetaData** metadata = get_metadata();
 
-    // If the metadata list is empty, move the break and return.
-    if (*metadata == NULL) 
-    {
+    // If the metadata list is empty, allocate and return.
+    if (*metadata == NULL) {
         return alloc_metadata_and_data(metadata, size);
     }
 
     else 
     {
-        // Find a free memory block in the heap that is large enough to hold the data, or use a new memory block after the break..
+        // Find a free memory block in the heap that is large enough to hold the data, or allocate a new memory block after the break.
         MetaData* mem_block = *metadata;
-        while (mem_block->next != NULL && !(mem_block->free && get_data_size(mem_block) >= sizeof(MetaData) + size + size % 8)) {
+        while (!(mem_block->free && get_data_size(mem_block) >= sizeof(MetaData) + size + (8 - size) % 8) && mem_block->next != NULL) {
             mem_block = mem_block->next;
         }
 
-        // If the found memory block is after the break, move the break and return.
-        if (get_data(mem_block) + get_data_size(mem_block) >= sbrk(0)) 
-        {
+        // If the found memory block is after the break, allocate and return.
+        if (get_data(mem_block) + get_data_size(mem_block) >= sbrk(0)) {
             return alloc_metadata_and_data(&mem_block->next, size);
         }
 
@@ -143,7 +141,7 @@ void* my_alloc(size_t size)
             // If the found memory is too large, split it and return.
             else {
                 // Get the values for the meta-data of the new memory block.
-                void* new_md_adress = get_data(mem_block) + size + size % 8;
+                void* new_md_adress = get_data(mem_block) + size + (8 - size) % 8;
                 MetaData* next_metadata = mem_block->next;
 
                 // Reallocate the found memory.
