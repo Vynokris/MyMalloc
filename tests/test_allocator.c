@@ -64,8 +64,8 @@ void my_test()
     showDebugInfo();
 
     // Callocate an int array.
-    int* val8 = my_calloc(50, sizeof(int));
-    printf("Callocated int[50] val8, first 3 values: %d, %d, %d.\n", val8[0], val8[1], val8[2]);
+    int* val8 = my_calloc(49, sizeof(int));
+    printf("Callocated int[49] val8, first 3 values: %d, %d, %d.\n", val8[0], val8[1], val8[2]);
 
     showDebugInfo();
 
