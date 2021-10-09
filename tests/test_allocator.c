@@ -20,7 +20,7 @@ void test1()
    free(a); 
  
    // CALLOC
-   a = calloc(1, sizeof(int));
+   a = my_calloc(1, sizeof(int));
    printf("(calloc) a = %d\n", *a);
    free(a);
 }
@@ -47,8 +47,8 @@ void my_test()
     showDebugInfo();
 
     // Callocate an int array.
-    int* val0 = calloc(49, sizeof(int));
-    printf("Callocated int[49] val8, first 3 values: %d, %d, %d.\n", val0[0], val0[1], val0[2]);
+    int* val0 = my_calloc(49, sizeof(int));
+    printf("Callocated int[49] val0 of first 3 values: %d, %d, %d.\n", val0[0], val0[1], val0[2]);
 
     showDebugInfo();
 
@@ -79,9 +79,9 @@ void my_test()
 
     showDebugInfo();
 
-    // Free val0.
-    free(val0);
-    printf("Freed int[50] val8 of first 3 values: 0, 0, 0.\n");
+    // Reallocate val0.
+    int* val9 = realloc(val0, sizeof(int));
+    printf("Reallocated int[50] val0 to int val9 of value: %d.\n", *val9);
 
     showDebugInfo();
 
@@ -126,8 +126,8 @@ void my_test()
     showDebugInfo();
 
     // Free val7 using realloc.
-    int* val9 = realloc(val7, 0);
-    (void)val9;
+    int* val8 = realloc(val7, 0);
+    (void)val8;
     printf("Using realloc, freed long long int val7 of value: 1.\n");
 
     showDebugInfo();
@@ -141,6 +141,12 @@ void my_test()
     // Free val7.
     free(val2);
     printf("Freed char val2 of value: 5.\n");
+
+    showDebugInfo();
+
+    // Free val9.
+    free(val9);
+    printf("Freed int val9 of value: 0.\n");
 
     showDebugInfo();
 }
