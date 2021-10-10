@@ -327,17 +327,22 @@ void* my_realloc(void* ptr, size_t size)
         // If the pointer was found.
         if (!is_end_of_list(mem_block)) 
         {
-            // Allocate a new space for the pointer.
-            MetaData* new_mem_block = my_malloc(size) - sizeof(MetaData);
-
-            // Copy the data over.
-            *(char*)get_data(new_mem_block) = *(char*)get_data(mem_block);
-            for (size_t i = 0; i < get_data_size(mem_block) && i < size; i++) {
-                *((char*)get_data(new_mem_block) + i) = *((char*)get_data(mem_block) + i);
+            // Create a backup of the pointer's data.
+            char* data_backup[ (get_data_size(mem_block) < size ? get_data_size(mem_block) : size) ];
+            for (size_t i = 0; i < sizeof(data_backup) / sizeof(data_backup[0]); i++) {
+                data_backup[i] = *((char*)get_data(mem_block) + i);
             }
 
             // Free the pointer.
             my_free(ptr);
+
+            // Allocate a new space for the pointer.
+            MetaData* new_mem_block = my_malloc(size) - sizeof(MetaData);
+
+            // Restore the backed up data.
+            for (size_t i = 0; i < sizeof(data_backup) / sizeof(data_backup[0]); i++) {
+                *((char*)get_data(new_mem_block) + i) = data_backup[i];
+            }
 
             return get_data(new_mem_block);
         }
