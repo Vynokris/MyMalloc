@@ -5,7 +5,7 @@
 
 // Definine console colors for the showDebugInfo function.
 #define C_DEFAULT "\x1B[39m"
-#define C_GRAY "\x1B[38;5;239m"
+#define C_GRAY "\x1B[38;5;242m"
 #define C_RED "\x1B[38;5;203m"
 #define C_GREEN "\x1B[32m"
 #define C_LIGHT_BLUE "\x1B[38;5;110m"
@@ -13,6 +13,11 @@
 
 void showDebugInfo()
 {
+    // Format of the debug info:
+    //  - Metadata blocks are in gray, they all have a size of 16 so it isn't shown.
+    //  - Data block are in red when they are used.
+    //  - Data blocks are in green when they are free.
+
     // Metadata chained list.
     MetaData* metadata = *get_metadata();
 
@@ -20,44 +25,41 @@ void showDebugInfo()
         printf("\n%sNo allocated data.%s\n", C_LIGHT_BLUE, C_DEFAULT);
     }
     else {
-        printf("\n%sAllocated data:%s\n", C_LIGHT_BLUE, C_DEFAULT);
+        printf("\n%sAllocated data: ", C_LIGHT_BLUE);
+        printf("(%smetadata%s, %sused memory%s, %sfree memory%s)\n", C_GRAY, C_LIGHT_BLUE, C_RED, C_LIGHT_BLUE, C_GREEN, C_LIGHT_BLUE);
 
         // Loop through the elements and print them.
         MetaData* current = metadata;
         for (int i = 0; !is_end_of_list(current); i++) 
         {
             // Print the metadata info in gray.
-            printf("%s|-----------------------|%s\n", C_LIGHT_BLUE, C_DEFAULT);
+            printf("%s|-----------------------|\n", C_LIGHT_BLUE);
             printf("%s", C_GRAY);
-            printf(" metadata #%d\n", i);
             printf(" address: %p\n", current);
-            printf(" size: %ld\n", get_metadata_size(current));
-            printf("%s", C_DEFAULT);
 
             // Printf the data info in green if the data is free, and in red if it is used.
-            printf("%s|-----------------------|%s\n", C_LIGHT_BLUE, C_DEFAULT);
+            printf("%s|-----------------------|\n", C_LIGHT_BLUE);
             if (current->free)
                 printf("%s", C_GREEN);
             else 
                 printf("%s", C_RED);
-            printf(" data #%d\n", i);
             printf(" address: %p\n", get_data(current));
             printf(" size: %ld\n", get_data_size(current));
-            printf(" free: %s\n", (current->free ? "true":"false"));
-            printf("%s", C_DEFAULT);
             
             // Move to the next metadata.
             current = current->next;
         }
-        printf("%s|-----------------------|%s\n", C_LIGHT_BLUE, C_DEFAULT);
+        printf("%s|-----------------------|\n", C_LIGHT_BLUE);
     }
 
-    printf("%sBreak address: %p%s\n\n", C_LIGHT_BLUE, sbrk(0), C_DEFAULT);
+    printf("Break address: %p%s\n\n", sbrk(0), C_DEFAULT);
 }
 
 
 static MetaData** get_metadata()
 {
+    // The metadata pointer is static so that it is not a global variable,
+    // but its value is still stored and modifiable.
     static MetaData* metadata = NULL;
     return &metadata;
 }
@@ -71,24 +73,20 @@ static void* get_data(MetaData* metadata_block)
 
 static size_t get_data_size(MetaData* metadata_block)
 {
+    // Return the distance to the next metadata.
     if (metadata_block->next != NULL) {
         return (void*)metadata_block->next - get_data(metadata_block);
     }
+    // Or return the distance to the break.
     else {
         return (size_t)(sbrk(0) - (size_t)get_data(metadata_block));
     }
 }
 
 
-static size_t get_metadata_size(MetaData* metadata_block)
-{
-    return get_data(metadata_block) - (void*)metadata_block;
-}
-
-
 static bool is_end_of_list(MetaData* metadata_block)
 {
-    return (metadata_block == NULL || metadata_block >= sbrk(0));
+    return (metadata_block == NULL || (void*)metadata_block >= sbrk(0));
 }
 
 
@@ -143,21 +141,25 @@ static void* split_mem_block(MetaData* mem_block, size_t size)
 
 static void* merge_mem_block(MetaData* mem_block_before)
 {
-    MetaData* mem_block = mem_block_before->next;
-    MetaData* mem_block_after = mem_block->next;
+    if (!is_end_of_list(mem_block_before->next)) // This handles the case where there is only 1 node in the metadata list.
+    {
+        MetaData* mem_block = mem_block_before->next;
+        MetaData* mem_block_after = mem_block->next;
 
-    // If the memory block before the freed one is free, merge the two.
-    if (mem_block_before->free) {
-        mem_block_before->next = mem_block_after;
-        mem_block = mem_block_before;
+        // If the memory block before the freed one is free, merge the two.
+        if (mem_block_before->free) {
+            mem_block_before->next = mem_block_after;
+            mem_block = mem_block_before;
+        }
+
+        // If the memory block after the freed one is free, merge the two.
+        if (!is_end_of_list(mem_block_after) && mem_block_after->free) {
+            mem_block->next = mem_block_after->next;
+        }
+
+        return mem_block;
     }
-
-    // If the memory block after the freed one is free, merge the two.
-    if (!is_end_of_list(mem_block_after) && mem_block_after->free) {
-        mem_block->next = mem_block_after->next;
-    }
-
-    return mem_block;
+    return mem_block_before;
 }
 
 
@@ -209,7 +211,7 @@ void* my_malloc(size_t size)
     {
         // Try to find a free memory block in the heap that is large enough to hold the data.
         MetaData* mem_block = *metadata;
-        while (!(mem_block->free && get_data_size(mem_block) >= (int)sizeof(MetaData) + get_aligned_size(size)) && !is_end_of_list(mem_block->next)) {
+        while (!(mem_block->free && get_data_size(mem_block) > (int)sizeof(MetaData) + get_aligned_size(size)) && !is_end_of_list(mem_block->next)) {
             mem_block = mem_block->next;
         }
 
@@ -237,82 +239,6 @@ void* my_malloc(size_t size)
 
 void* my_realloc(void* ptr, size_t size)
 {
-    // The following code was done with the Paul's implementation in mind.
-    /*
-    // If the size is 0, just free the memory block.
-    if (size == 0) {
-        my_free(ptr);
-    }
-
-    // Else, reallocate it.
-    else {
-        // Metadata of all allocated memory.
-        MetaData* metadata = *get_metadata();
-
-        // If the metadata list isn't empty...
-        if (!is_end_of_list(metadata))
-        {
-            // Find the memory block to be reallocated.
-            MetaData* mem_block = metadata;
-            MetaData* mem_block_before;
-            while (!is_end_of_list(mem_block) && get_data(mem_block) != ptr) {
-                mem_block_before = mem_block;
-                mem_block = mem_block->next;
-            }
-
-            // If the memory block to be reallocated was found...
-            if (!is_end_of_list(mem_block)) 
-            {
-                // If the block is the right size, return.
-                if (get_data_size(mem_block) == get_aligned_size(size)) {
-                    return ptr;
-                }
-
-                // If the block is too big and can be split, split it and return.
-                else if (get_data_size(mem_block) > sizeof(MetaData) + get_aligned_size(size)) {
-                    return split_mem_block(mem_block, size);
-                }
-
-                // If the block is too small...
-                else {
-                    // Try to merge it with its neighbors.
-                    MetaData* merged_mem_block = merge_mem_block(mem_block_before);
-                    merged_block->free = false;
-
-                    // Copy the data from the old mem_block to the new_mem_block.
-                    if (mem_block != merged_mem_block) {
-                        for (size_t i = 0; i < get_data_size(mem_block) && i < size; i++) {
-                            *((char*)get_data(merged_mem_block) + i) = *((char*)get_data(mem_block) + i);
-                        }
-                    }
-
-                    // If the new memory block is the right size, return.
-                    if (get_data_size(merged_mem_block) == get_aligned_size(size)) {
-                        return merged_mem_block;
-                    }
-
-                    // If the new memory block is too big and can be split, split it and return.
-                    else if (get_data_size(merged_mem_block) > sizeof(MetaData) + get_aligned_size(size)) {
-                        return split_mem_block(merged_mem_block, size);
-                        // Move the break back if the merged_mem_block is the last one of the list.
-                    }
-
-                    // If the new memory block is still too small, malloc a new memory block, copy the data over and free the block to be reallocated.
-                    else {
-                        MetaData* new_mem_block = my_malloc(size) - sizeof(MetaData);
-                        for (size_t i = 0; i < get_data_size(merged_mem_block) && i < size; i++) {
-                            *((char*)get_data(new_mem_block) + i) = *((char*)get_data(merged_mem_block) + i);
-                        }
-                        my_free(get_data(merged_mem_block));
-                        return get_data(new_mem_block);
-                    }
-                }
-            }
-        }
-    }
-    return NULL;
-    */
-
     // The following code was done on my own and is more compact.
     if (size > 0)
     {
@@ -328,7 +254,7 @@ void* my_realloc(void* ptr, size_t size)
         if (!is_end_of_list(mem_block)) 
         {
             // Create a backup of the pointer's data.
-            char* data_backup[ (get_data_size(mem_block) < size ? get_data_size(mem_block) : size) ];
+            char data_backup[ (get_data_size(mem_block) < size ? get_data_size(mem_block) : size) ]; // The backup uses the smallest between the pointer's size and the new size.
             for (size_t i = 0; i < sizeof(data_backup) / sizeof(data_backup[0]); i++) {
                 data_backup[i] = *((char*)get_data(mem_block) + i);
             }

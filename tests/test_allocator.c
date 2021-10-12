@@ -4,7 +4,7 @@
 #include <my_allocator.h>
 
  
-void test1()
+void test()
 {
    // MALLOC
    int* a = malloc(sizeof(int));
@@ -157,6 +157,8 @@ int main()
     registerAllocatorHook();
 
     my_test();
+    // testAlloc();
+    // test();
 
     return 0;
 }

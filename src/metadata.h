@@ -20,9 +20,6 @@ static void* get_data(MetaData* metadata_block);
 // Returns the size of the data storded after a metadata block.
 static size_t get_data_size(MetaData* metadata_block);
 
-// Returns the size of a metadata block.
-static size_t get_metadata_size(MetaData* metadata_block);
-
 // Returns true if the given metadata block is the last one of the list and false if not.
 static bool is_end_of_list(MetaData* metadata_block);
 
