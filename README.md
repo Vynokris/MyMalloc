@@ -101,7 +101,7 @@ The following functions were remade entirely with custom code, and replace the f
     </ul>
 <li> Notes: </li>
     <ul>
-    <li> This function cannot be called with <code> calloc()</code>. <br> 
+    <li> This function cannot be called with <code> my_calloc()</code>. <br> 
          This is because <code> malloc.h </code> doesn't provide a way to replace its calloc function. </li>
     </ul>
 </ul>
